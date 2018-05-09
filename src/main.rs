@@ -88,17 +88,28 @@ impl Cpu {
     }
 
     fn execute(&mut self) {
-        match self.opcode & 0xF000 {
-            // 6XNN - Sets VX to NN
-            0x6000 => {
+        match (
+            (self.opcode >> 8 & 0xF0) as u8,
+            (self.opcode & 0x00FF) as u8,
+        ) {
+            // 2NNN - Call addr NNN
+            (0x20, _) => {
+                self.sp += 1;
+                self.registers[self.sp as usize] = self.pc as u8;
+                self.pc = self.nnn();
+            }
+            // 6XNN - Set VX to NN
+            (0x60, _) => {
                 self.registers[self.x() as usize] = self.nn();
+                self.pc += 2;
             }
-            // ANNN - Sets I to NNN
-            0xA000 => {
+            // ANNN - Set I to NNN
+            (0xA0, _) => {
                 self.i = self.nnn();
+                self.pc += 2;
             }
-            // DXYN - Draws sprite at (VX, VY) sized N*N pixels
-            0xD000 => {
+            // DXYN - Draw sprite at (VX, VY) sized N*N pixels
+            (0xD0, _) => {
                 let address = self.x() as usize + self.y() as usize * 32;
                 for (i, pixel) in self.memory
                     [self.i as usize..(self.i as usize + self.n() as usize)]
@@ -112,6 +123,14 @@ impl Cpu {
                         self.registers[0xF] = 1;
                     }
                 }
+                self.pc += 2;
+            }
+            // FX33 - Store BCD of VX in I, I+1, I+2
+            (0xF0, 0x33) => {
+                self.memory[self.i as usize] = self.registers[self.x() as usize] / 100;
+                self.memory[self.i as usize + 1] = self.registers[self.x() as usize] % 100 / 10;
+                self.memory[self.i as usize + 2] = self.registers[self.x() as usize] % 100 % 10;
+                self.pc += 2;
             }
             _ => {
                 debug!("{:?}", self);
@@ -119,7 +138,6 @@ impl Cpu {
                 std::process::exit(1);
             }
         }
-        self.pc += 2;
     }
 
     pub fn run(&mut self) {
