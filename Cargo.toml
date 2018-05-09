@@ -1,0 +1,8 @@
+[package]
+name = "chip8"
+version = "0.1.0"
+authors = ["Luka Dornhecker <luka.dornhecker@gmail.com>"]
+
+[dependencies]
+env_logger = "*"
+log = { version = "*", features = ["std"] }
