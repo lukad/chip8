@@ -95,12 +95,17 @@ impl Cpu {
             // 2NNN - Call addr NNN
             (0x20, _) => {
                 self.sp += 1;
-                self.registers[self.sp as usize] = self.pc as u8;
+                self.stack[self.sp as usize] = self.pc;
                 self.pc = self.nnn();
             }
-            // 6XNN - Set VX to NN
+            // 6XNN - Set Vx to NN
             (0x60, _) => {
                 self.registers[self.x() as usize] = self.nn();
+                self.pc += 2;
+            }
+            // 7XNN - Adds NN to Vx
+            (0x70, _) => {
+                self.registers[self.x() as usize] += self.nn();
                 self.pc += 2;
             }
             // ANNN - Set I to NNN
@@ -108,7 +113,7 @@ impl Cpu {
                 self.i = self.nnn();
                 self.pc += 2;
             }
-            // DXYN - Draw sprite at (VX, VY) sized N*N pixels
+            // DXYN - Draw sprite at (Vx, Vy) sized N*N pixels
             (0xD0, _) => {
                 let address = self.x() as usize + self.y() as usize * 32;
                 for (i, pixel) in self.memory
@@ -125,11 +130,31 @@ impl Cpu {
                 }
                 self.pc += 2;
             }
-            // FX33 - Store BCD of VX in I, I+1, I+2
+            // FX29 - Set i to the location of sprite for Vx
+            (0xF0, 0x29) => {
+                let id = self.registers[self.x() as usize];
+                self.i = match id >= 16 * 5 {
+                    true => 0,
+                    false => id as u16,
+                };
+                self.pc += 2;
+            }
+            // FX33 - Store BCD of Vx in I, I+1, I+2
             (0xF0, 0x33) => {
                 self.memory[self.i as usize] = self.registers[self.x() as usize] / 100;
                 self.memory[self.i as usize + 1] = self.registers[self.x() as usize] % 100 / 10;
                 self.memory[self.i as usize + 2] = self.registers[self.x() as usize] % 100 % 10;
+                self.pc += 2;
+            }
+            // FX65 - Read from memory into V0 through Vx start from I
+            (0xF0, 0x65) => {
+                for (i, value) in self.memory
+                    [self.i as usize..(self.i as usize + self.x() as usize)]
+                    .iter()
+                    .enumerate()
+                {
+                    self.registers[i] = *value;
+                }
                 self.pc += 2;
             }
             _ => {
