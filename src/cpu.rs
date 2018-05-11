@@ -20,6 +20,12 @@ pub struct Cpu {
 
 pub struct Opcode(pub u8, pub u8);
 
+impl fmt::Debug for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#06X}", (self.0 as u16) << 8 | self.1 as u16)
+    }
+}
+
 impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(
@@ -68,8 +74,7 @@ impl Cpu {
             let opcode = self.fetch();
             let instruction = Instruction::decode(opcode);
             self.execute(instruction);
-
-            // update timers
+            self.update_timers();
         }
     }
 
@@ -80,14 +85,29 @@ impl Cpu {
         )
     }
 
+    fn update_timers(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
+    }
+
     fn execute(&mut self, instruction: Instruction) {
         trace!("{:?}", instruction);
 
         let mut increment_pc = true;
 
         match instruction {
+            Return => {
+                self.sp -= 1;
+                self.pc = self.stack[self.sp as usize];
+            }
             Call(address) => {
                 self.stack[self.sp as usize] = self.pc;
+                self.sp += 1;
                 self.pc = address;
                 increment_pc = false;
             }
@@ -108,6 +128,8 @@ impl Cpu {
                     }
                 }
             }
+            LoadDelay(x) => self.registers[x as usize] = self.delay_timer,
+            SetDelay(x) => self.delay_timer = self.registers[x as usize],
             SetFontLocation(x) => self.i = self.registers[x as usize] as u16 * 5,
             SetBCD(x) => {
                 self.memory[self.i as usize] = self.registers[x as usize] / 100;
