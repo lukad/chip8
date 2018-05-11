@@ -5,6 +5,8 @@ use std::process;
 
 use instruction::*;
 
+use rand;
+
 pub struct Cpu {
     registers: [u8; 16],
     stack: [u16; 16],
@@ -29,7 +31,7 @@ impl fmt::Debug for Opcode {
 impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(
-            f, "Cpu {{ registers: {:?}, index: {:x}, pc: {:x}, sp: {:x}, opcode: {:x}, stack: {:?}, delay: {:x}, sound: {:x} }}",
+            f, "Cpu {{ registers: {:x?}, index: {:x}, pc: {:x}, sp: {:x}, opcode: {:x}, stack: {:?}, delay: {:x}, sound: {:x} }}",
             self.registers,
             self.i,
             self.pc,
@@ -105,15 +107,25 @@ impl Cpu {
                 self.sp -= 1;
                 self.pc = self.stack[self.sp as usize];
             }
+            Jump(address) => {
+                self.pc = address;
+                increment_pc = false;
+            }
             Call(address) => {
                 self.stack[self.sp as usize] = self.pc;
                 self.sp += 1;
                 self.pc = address;
                 increment_pc = false;
             }
+            SkipIfEqual(x, kk) => {
+                if self.registers[x as usize] == kk {
+                    self.pc += 2
+                }
+            }
             LoadConstant(x, kk) => self.registers[x as usize] = kk,
             AddConstant(x, kk) => self.registers[x as usize] += kk,
             SetAddress(address) => self.i = address,
+            RandomAnd(x, kk) => self.registers[x as usize] = rand::random::<u8>() & kk,
             Draw(x, y, n) => {
                 let address = (self.registers[x as usize] + self.registers[y as usize]) as usize;
                 for (i, pixel) in self.memory[self.i as usize..=(self.i as usize + n as usize)]
@@ -138,7 +150,7 @@ impl Cpu {
                 self.pc += 2;
             }
             _ => {
-                error!("Instruction not implemented: {:?}", instruction);
+                error!("Instruction not implemented");
                 process::exit(1);
             }
         }

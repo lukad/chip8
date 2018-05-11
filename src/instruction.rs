@@ -4,11 +4,14 @@ use std::fmt;
 pub use self::Instruction::*;
 
 pub enum Instruction {
-    Call(u16),
     Return,
+    Jump(u16),
+    Call(u16),
+    SkipIfEqual(u8, u8),
     LoadConstant(u8, u8),
     AddConstant(u8, u8),
     SetAddress(u16),
+    RandomAnd(u8, u8),
     Draw(u8, u8, u8),
     LoadDelay(u8),
     SetDelay(u8),
@@ -20,11 +23,14 @@ pub enum Instruction {
 impl fmt::Debug for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Call(addr) => write!(f, "CALL {:#06X}", addr),
             Return => write!(f, "RET"),
+            Jump(addr) => write!(f, "JP {:#06X}", addr),
+            Call(addr) => write!(f, "CALL {:#06X}", addr),
+            SkipIfEqual(x, kk) => write!(f, "SE V[{:#04X}], {:#04X}", x, kk),
+            LoadConstant(x, kk) => write!(f, "LD V[{:#04X}], {:#04X}", x, kk),
+            AddConstant(x, kk) => write!(f, "ADD V[{:#04X}], {:#04X}", x, kk),
             SetAddress(addr) => write!(f, "LD I, {:#06X}", addr),
-            LoadConstant(x, v) => write!(f, "LD V[{:#04X}], {:#04X}", x, v),
-            AddConstant(x, v) => write!(f, "ADD V[{:#04X}], {:#04x}", x, v),
+            RandomAnd(x, kk) => write!(f, "RND V[{:#04X}], {:#04X}", x, kk),
             Draw(x, y, n) => write!(f, "DRW V[{:#04X}], V[{:#04X}], {:#04X}", x, y, n),
             LoadDelay(x) => write!(f, "LD V[{:#04X}], DT", x),
             SetDelay(x) => write!(f, "LD DT, V[{:#04X}]", x),
@@ -39,10 +45,13 @@ impl Instruction {
     pub fn decode(Opcode(high, low): Opcode) -> Instruction {
         match (high & 0xF0, low) {
             (0x00, 0xEE) => Return,
+            (0x10, _) => Jump(((high & 0x0F) as u16) << 8 | low as u16),
             (0x20, _) => Call(((high & 0x0F) as u16) << 8 | low as u16),
+            (0x30, _) => SkipIfEqual(high & 0x0F, low),
             (0x60, _) => LoadConstant(high & 0x0F, low),
             (0x70, _) => AddConstant(high & 0x0F, low),
             (0xA0, _) => SetAddress(((high & 0x0F) as u16) << 8 | low as u16),
+            (0xC0, _) => RandomAnd(high & 0x0F, low),
             (0xD0, _) => Draw(high & 0x0F, low >> 4, low & 0x0F),
             (0xF0, 0x07) => LoadDelay(high & 0xF),
             (0xF0, 0x15) => SetDelay(high & 0xF),
