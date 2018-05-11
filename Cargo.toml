@@ -5,4 +5,4 @@ authors = ["Luka Dornhecker <luka.dornhecker@gmail.com>"]
 
 [dependencies]
 env_logger = "*"
-log = { version = "*", features = ["std"] }
+log = { version = "*", features = ["std", "release_max_level_warn"] }
