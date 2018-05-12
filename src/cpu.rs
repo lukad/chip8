@@ -123,7 +123,9 @@ impl Cpu {
                 }
             }
             LoadConstant(x, kk) => self.registers[x as usize] = kk,
-            AddConstant(x, kk) => self.registers[x as usize] += kk,
+            AddConstant(x, kk) => {
+                self.registers[x as usize] = self.registers[x as usize].wrapping_add(kk)
+            }
             SetAddress(address) => self.i = address,
             RandomAnd(x, kk) => self.registers[x as usize] = rand::random::<u8>() & kk,
             Draw(x, y, n) => {
