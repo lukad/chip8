@@ -5,6 +5,6 @@ authors = ["Luka Dornhecker <luka.dornhecker@gmail.com>"]
 
 [dependencies]
 env_logger = "*"
-log = { version = "*", features = ["std", "release_max_level_warn"] }
+log = { version = "*", features = ["std", "release_max_level_debug"] }
 rand = "*"
 sdl2 = "*"

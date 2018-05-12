@@ -112,6 +112,7 @@ impl Cpu {
         let mut increment_pc = true;
 
         match instruction {
+            Clear => self.vram = [0; 2048],
             Return => {
                 self.sp -= 1;
                 self.pc = self.stack[self.sp as usize];
@@ -126,13 +127,19 @@ impl Cpu {
                 self.pc = address;
                 increment_pc = false;
             }
-            SkipIfEqual(x, kk) => {
+            SkipIfConstantEqual(x, kk) => {
                 if self.registers[x as usize] == kk {
                     self.pc += 2
                 }
             }
-            SkipIfNotEqual(x, kk) => {
+            SkipIfConstantNotEqual(x, kk) => {
                 if self.registers[x as usize] != kk {
+                    self.pc += 2
+                }
+            }
+            SkipIfEqual(x, y) => {
+                debug!("{} {}", x, y);
+                if self.registers[x as usize] == self.registers[y as usize] {
                     self.pc += 2
                 }
             }
@@ -148,11 +155,27 @@ impl Cpu {
                 self.registers[0xF] = ((vx as u16 + vy as u16) > 255) as u8;
                 self.registers[x as usize] = vx.wrapping_add(vy);
             }
+            Xor(x, y) => self.registers[x as usize] ^= self.registers[y as usize],
             Sub(x, y) => {
                 let vx = self.registers[x as usize];
                 let vy = self.registers[y as usize];
                 self.registers[0xF] = (vx > vy) as u8;
                 self.registers[x as usize] = vx.wrapping_sub(vy);
+            }
+            ShiftRight(x, y) => {
+                let vy = self.registers[y as usize];
+                self.registers[0xF] = vy >> 7;
+                self.registers[x as usize] = vy >> 1;
+            }
+            ShiftLeft(x, y) => {
+                let vy = self.registers[y as usize];
+                self.registers[0xF] = vy >> 7;
+                self.registers[x as usize] = vy << 1;
+            }
+            SkipIfNotEqual(x, y) => {
+                if self.registers[x as usize] != self.registers[y as usize] {
+                    self.pc += 2;
+                }
             }
             SetAddress(address) => self.i = address,
             RandomAnd(x, kk) => self.registers[x as usize] = rand::random::<u8>() & kk,
@@ -173,8 +196,8 @@ impl Cpu {
                         let old = self.vram[vram_addr];
                         let new = self.vram[vram_addr] ^ (byte >> (7 - j as u8));
                         self.vram[vram_addr] = new;
-                        if old == 1 && new == 0 {
-                            self.registers[0xF] = 1
+                        if old & 1 == 1 && new & 1 == 0 {
+                            self.registers[0xF] = 1;
                         }
                     }
                 }
@@ -200,6 +223,9 @@ impl Cpu {
                 self.memory[self.i as usize + 1] = (value % 100) / 10;
                 self.memory[self.i as usize + 2] = (value % 100) % 10;
             }
+            DumpRegisters(x) => for i in 0..x + 1 {
+                self.memory[self.i as usize] = self.registers[i as usize];
+            },
             LoadRegisters(x) => for i in 0..x + 1 {
                 self.registers[i as usize] = self.memory[self.i as usize];
             },
