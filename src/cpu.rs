@@ -128,17 +128,26 @@ impl Cpu {
             }
             SetAddress(address) => self.i = address,
             RandomAnd(x, kk) => self.registers[x as usize] = rand::random::<u8>() & kk,
-            Draw(x, y, n) => {
-                let address = (self.registers[x as usize] + self.registers[y as usize]) as usize;
-                for (i, pixel) in self.memory[self.i as usize..=(self.i as usize + n as usize)]
+            Draw(x, y, height) => {
+                let vx = self.registers[x as usize] as usize;
+                let vy = self.registers[y as usize] as usize;
+                self.registers[0xF] = 0;
+
+                for (i, byte) in self.memory[self.i as usize..(self.i as usize + height as usize)]
                     .iter()
                     .enumerate()
                 {
-                    let old = self.vram[address + i];
-                    let new = old ^ pixel;
-                    self.vram[address] = new;
-                    if old == 1 && new == 0 {
-                        self.registers[0xF] = 1;
+                    for j in 0..8 {
+                        let pos_y = (vy + i) % 32;
+                        let pos_x = (vx + j) % 64;
+
+                        let vram_addr = pos_y * 64 + pos_x;
+                        let old = self.vram[vram_addr];
+                        let new = self.vram[vram_addr] ^ (byte >> (7 - j as u8));
+                        self.vram[vram_addr] = new;
+                        if old == 1 && new == 0 {
+                            self.registers[0xF] = 1
+                        }
                     }
                 }
             }
