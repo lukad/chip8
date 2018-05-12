@@ -180,12 +180,19 @@ impl Cpu {
                 }
             }
             SkipIfNotPressed(x) => {
+                if self.keys[x as usize] != 1 {
+                    self.pc += 2;
+                }
+            }
+            SkipIfPressed(x) => {
                 if self.keys[x as usize] == 1 {
                     self.pc += 2;
                 }
             }
             LoadDelay(x) => self.registers[x as usize] = self.delay_timer,
             SetDelay(x) => self.delay_timer = self.registers[x as usize],
+            SetSound(x) => self.sound_timer = self.registers[x as usize],
+            AddAddress(x) => self.i += self.registers[x as usize] as u16,
             SetFontLocation(x) => self.i = self.registers[x as usize] as u16 * 5,
             SetBCD(x) => {
                 let value = self.registers[x as usize];
