@@ -19,6 +19,7 @@ pub struct Cpu {
     sp: u16,
     memory: [u8; 4096],
     pub vram: [u8; 2048],
+    keys: [u8; 16],
     delay_timer: u8,
     sound_timer: u8,
 }
@@ -34,12 +35,13 @@ impl fmt::Debug for Opcode {
 impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(
-            f, "Cpu {{ registers: {:x?}, index: {:x}, pc: {:x}, sp: {:x}, stack: {:?}, delay: {:x}, sound: {:x} }}",
+            f, "Cpu {{ registers: {:x?}, index: {:x}, pc: {:x}, sp: {:x}, stack: {:?}, keys: {:x?}, delay: {:x}, sound: {:x} }}",
             self.registers,
             self.i,
             self.pc,
             self.sp,
             self.stack,
+            self.keys,
             self.delay_timer,
             self.sound_timer
         )
@@ -56,6 +58,7 @@ impl Cpu {
             sp: 0,
             memory: [0u8; 4096],
             vram: [0u8; 2048],
+            keys: [0u8; 16],
             delay_timer: 0,
             sound_timer: 0,
         }
@@ -128,9 +131,28 @@ impl Cpu {
                     self.pc += 2
                 }
             }
+            SkipIfNotEqual(x, kk) => {
+                if self.registers[x as usize] != kk {
+                    self.pc += 2
+                }
+            }
             LoadConstant(x, kk) => self.registers[x as usize] = kk,
             AddConstant(x, kk) => {
                 self.registers[x as usize] = self.registers[x as usize].wrapping_add(kk)
+            }
+            Load(x, y) => self.registers[x as usize] = self.registers[y as usize],
+            And(x, y) => self.registers[x as usize] &= self.registers[y as usize],
+            Add(x, y) => {
+                let vx = self.registers[x as usize];
+                let vy = self.registers[y as usize];
+                self.registers[0xF] = ((vx as u16 + vy as u16) > 255) as u8;
+                self.registers[x as usize] = vx.wrapping_add(vy);
+            }
+            Sub(x, y) => {
+                let vx = self.registers[x as usize];
+                let vy = self.registers[y as usize];
+                self.registers[0xF] = (vx > vy) as u8;
+                self.registers[x as usize] = vx.wrapping_sub(vy);
             }
             SetAddress(address) => self.i = address,
             RandomAnd(x, kk) => self.registers[x as usize] = rand::random::<u8>() & kk,
@@ -155,6 +177,11 @@ impl Cpu {
                             self.registers[0xF] = 1
                         }
                     }
+                }
+            }
+            SkipIfNotPressed(x) => {
+                if self.keys[x as usize] == 1 {
+                    self.pc += 2;
                 }
             }
             LoadDelay(x) => self.registers[x as usize] = self.delay_timer,
