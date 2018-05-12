@@ -151,6 +151,9 @@ impl Cpu {
                 self.memory[self.i as usize + 1] = (value % 100) / 10;
                 self.memory[self.i as usize + 2] = (value % 100) % 10;
             }
+            LoadRegisters(x) => for i in 0..x + 1 {
+                self.registers[i as usize] = self.memory[self.i as usize];
+            },
             _ => {
                 error!("Instruction not implemented");
                 process::exit(1);

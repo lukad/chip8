@@ -17,6 +17,7 @@ pub enum Instruction {
     SetDelay(u8),
     SetFontLocation(u8),
     SetBCD(u8),
+    LoadRegisters(u8),
     NotImplemented(u16),
 }
 
@@ -36,6 +37,7 @@ impl fmt::Debug for Instruction {
             SetDelay(x) => write!(f, "LD DT, V[{:#04X}]", x),
             SetFontLocation(x) => write!(f, "LD F, V[{:#04X}]", x),
             SetBCD(x) => write!(f, "LD B, V[{:#04X}]", x),
+            LoadRegisters(x) => write!(f, "LD V[0...{:#04X}], [I]", x),
             NotImplemented(opcode) => write!(f, "{:#06X}", opcode),
         }
     }
@@ -57,6 +59,7 @@ impl Instruction {
             (0xF0, 0x15) => SetDelay(high & 0xF),
             (0xF0, 0x29) => SetFontLocation(high & 0xF),
             (0xF0, 0x33) => SetBCD(high & 0xF),
+            (0xF0, 0x65) => LoadRegisters(high & 0xF),
             _ => NotImplemented((high as u16) << 8 | low as u16),
         }
     }
