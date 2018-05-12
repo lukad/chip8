@@ -2,21 +2,24 @@
 extern crate log;
 extern crate env_logger;
 extern crate rand;
+extern crate sdl2;
 
 use std::env;
 
+mod chip8;
 mod cpu;
 mod instruction;
-use cpu::Cpu;
+
+use chip8::Chip8;
 
 fn main() {
     env_logger::init();
 
-    let mut cpu = Cpu::new();
+    let mut chip8 = Chip8::new();
 
     if let Some(game_path) = env::args().nth(1) {
-        cpu.load(game_path);
+        chip8.load(game_path);
     }
 
-    cpu.run();
+    chip8.run();
 }

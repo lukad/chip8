@@ -1,11 +1,15 @@
-use std::fmt;
-use std::fs::File;
-use std::io::Read;
-use std::process;
-
 use instruction::*;
 
 use rand;
+
+use std::fmt;
+use std::fs::File;
+use std::io::Read;
+
+#[derive(Debug)]
+pub enum Error {
+    InstructionNotImplemented,
+}
 
 pub struct Cpu {
     registers: [u8; 16],
@@ -13,9 +17,8 @@ pub struct Cpu {
     i: u16,
     pc: u16,
     sp: u16,
-    opcode: u16,
     memory: [u8; 4096],
-    vram: [u8; 2048],
+    pub vram: [u8; 2048],
     delay_timer: u8,
     sound_timer: u8,
 }
@@ -31,12 +34,11 @@ impl fmt::Debug for Opcode {
 impl fmt::Debug for Cpu {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(
-            f, "Cpu {{ registers: {:x?}, index: {:x}, pc: {:x}, sp: {:x}, opcode: {:x}, stack: {:?}, delay: {:x}, sound: {:x} }}",
+            f, "Cpu {{ registers: {:x?}, index: {:x}, pc: {:x}, sp: {:x}, stack: {:?}, delay: {:x}, sound: {:x} }}",
             self.registers,
             self.i,
             self.pc,
             self.sp,
-            self.opcode,
             self.stack,
             self.delay_timer,
             self.sound_timer
@@ -52,7 +54,6 @@ impl Cpu {
             i: 0,
             pc: 0x0200,
             sp: 0,
-            opcode: 0,
             memory: [0u8; 4096],
             vram: [0u8; 2048],
             delay_timer: 0,
@@ -70,14 +71,19 @@ impl Cpu {
         debug!("Read {:?} bytes into memory", n);
     }
 
-    pub fn run(&mut self) {
-        debug!("Starting the emulation loop");
-        loop {
-            let opcode = self.fetch();
-            let instruction = Instruction::decode(opcode);
-            self.execute(instruction);
-            self.update_timers();
+    pub fn load_font(&mut self, font: [u8; 80]) {
+        debug!("Loading the font");
+        for (i, byte) in font.iter().enumerate() {
+            self.memory[i] = *byte;
         }
+    }
+
+    pub fn step(&mut self) -> Result<(), Error> {
+        let opcode = self.fetch();
+        let instruction = Instruction::decode(opcode);
+        self.execute(instruction)?;
+        self.update_timers();
+        Ok(())
     }
 
     fn fetch(&mut self) -> Opcode {
@@ -97,7 +103,7 @@ impl Cpu {
         }
     }
 
-    fn execute(&mut self, instruction: Instruction) {
+    fn execute(&mut self, instruction: Instruction) -> Result<(), Error> {
         trace!("{:?}", instruction);
 
         let mut increment_pc = true;
@@ -164,13 +170,15 @@ impl Cpu {
                 self.registers[i as usize] = self.memory[self.i as usize];
             },
             _ => {
-                error!("Instruction not implemented");
-                process::exit(1);
+                debug!("Instruction not implemented");
+                return Err(Error::InstructionNotImplemented);
             }
         }
 
         if increment_pc {
             self.pc += 2;
         }
+
+        Ok(())
     }
 }
