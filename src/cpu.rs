@@ -146,10 +146,10 @@ impl Cpu {
             SetDelay(x) => self.delay_timer = self.registers[x as usize],
             SetFontLocation(x) => self.i = self.registers[x as usize] as u16 * 5,
             SetBCD(x) => {
-                self.memory[self.i as usize] = self.registers[x as usize] / 100;
-                self.memory[self.i as usize + 1] = self.registers[x as usize] % 100 / 10;
-                self.memory[self.i as usize + 2] = self.registers[x as usize] % 100 % 10;
-                self.pc += 2;
+                let value = self.registers[x as usize];
+                self.memory[self.i as usize] = value / 100;
+                self.memory[self.i as usize + 1] = (value % 100) / 10;
+                self.memory[self.i as usize + 2] = (value % 100) % 10;
             }
             _ => {
                 error!("Instruction not implemented");
