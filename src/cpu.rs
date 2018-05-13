@@ -19,7 +19,7 @@ pub struct Cpu {
     sp: u16,
     memory: [u8; 4096],
     pub vram: [u8; 2048],
-    keys: [u8; 16],
+    pub keys: [u8; 16],
     delay_timer: u8,
     sound_timer: u8,
 }
@@ -202,16 +202,24 @@ impl Cpu {
                 }
             }
             SkipIfNotPressed(x) => {
-                if self.keys[x as usize] != 1 {
+                let key = self.registers[x as usize];
+                if self.keys[key as usize] != 1 {
                     self.pc += 2;
                 }
             }
             SkipIfPressed(x) => {
-                if self.keys[x as usize] == 1 {
+                let key = self.registers[x as usize];
+                if self.keys[key as usize] == 1 {
                     self.pc += 2;
                 }
             }
             LoadDelay(x) => self.registers[x as usize] = self.delay_timer,
+            WaitForKey(x) => {
+                let key = self.registers[x as usize];
+                if self.keys[key as usize] != 1 {
+                    increment_pc = false;
+                }
+            }
             SetDelay(x) => self.delay_timer = self.registers[x as usize],
             SetSound(x) => self.sound_timer = self.registers[x as usize],
             AddAddress(x) => self.i += self.registers[x as usize] as u16,

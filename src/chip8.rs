@@ -66,11 +66,49 @@ impl Chip8 {
         'outer: loop {
             for event in self.events.poll_iter() {
                 match event {
-                    Event::Quit { .. } => break 'outer,
-                    Event::KeyDown {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
                         keycode: Some(Keycode::Escape),
                         ..
                     } => break 'outer,
+                    Event::KeyDown { keycode, .. } => match keycode {
+                        Some(Keycode::Num1) => self.cpu.keys[0x1] = 1,
+                        Some(Keycode::Num2) => self.cpu.keys[0x2] = 1,
+                        Some(Keycode::Num3) => self.cpu.keys[0x3] = 1,
+                        Some(Keycode::Num4) => self.cpu.keys[0xC] = 1,
+                        Some(Keycode::Q) => self.cpu.keys[0x4] = 1,
+                        Some(Keycode::W) => self.cpu.keys[0x5] = 1,
+                        Some(Keycode::E) => self.cpu.keys[0x6] = 1,
+                        Some(Keycode::R) => self.cpu.keys[0xD] = 1,
+                        Some(Keycode::A) => self.cpu.keys[0x7] = 1,
+                        Some(Keycode::S) => self.cpu.keys[0x8] = 1,
+                        Some(Keycode::D) => self.cpu.keys[0x9] = 1,
+                        Some(Keycode::F) => self.cpu.keys[0xE] = 1,
+                        Some(Keycode::Z) => self.cpu.keys[0xA] = 1,
+                        Some(Keycode::X) => self.cpu.keys[0x0] = 1,
+                        Some(Keycode::C) => self.cpu.keys[0xB] = 1,
+                        Some(Keycode::V) => self.cpu.keys[0xF] = 1,
+                        _ => (),
+                    },
+                    Event::KeyUp { keycode, .. } => match keycode {
+                        Some(Keycode::Num1) => self.cpu.keys[0x1] = 0,
+                        Some(Keycode::Num2) => self.cpu.keys[0x2] = 0,
+                        Some(Keycode::Num3) => self.cpu.keys[0x3] = 0,
+                        Some(Keycode::Num4) => self.cpu.keys[0xC] = 0,
+                        Some(Keycode::Q) => self.cpu.keys[0x4] = 0,
+                        Some(Keycode::W) => self.cpu.keys[0x5] = 0,
+                        Some(Keycode::E) => self.cpu.keys[0x6] = 0,
+                        Some(Keycode::R) => self.cpu.keys[0xD] = 0,
+                        Some(Keycode::A) => self.cpu.keys[0x7] = 0,
+                        Some(Keycode::S) => self.cpu.keys[0x8] = 0,
+                        Some(Keycode::D) => self.cpu.keys[0x9] = 0,
+                        Some(Keycode::F) => self.cpu.keys[0xE] = 0,
+                        Some(Keycode::Z) => self.cpu.keys[0xA] = 0,
+                        Some(Keycode::X) => self.cpu.keys[0x0] = 0,
+                        Some(Keycode::C) => self.cpu.keys[0xB] = 0,
+                        Some(Keycode::V) => self.cpu.keys[0xF] = 0,
+                        _ => (),
+                    },
                     _ => (),
                 }
             }
