@@ -25,29 +25,27 @@ const FONT: [u8; 80] = [
 impl Chip8 {
     pub fn new() -> Chip8 {
         debug!("Creating SDL2 context");
-        let sdl_context = sdl2::init().expect("Could not create SDL2 context");
+        let sdl_context = sdl2::init().unwrap();
+
         debug!("Initializing SDL2 video subsystem");
-        let video = sdl_context
-            .video()
-            .expect("Could not initialize SDL2 video subsystem");
+        let video = sdl_context.video().unwrap();
+
         debug!("Creating a window");
         let window = video
             .window("CHIP-8", 768, 384)
             .position_centered()
             .build()
-            .expect("Could not create window");
+            .unwrap();
+
         debug!("Creating a canvas");
-        let canvas = window
-            .into_canvas()
-            .build()
-            .expect("Could not create canvas");
+        let canvas = window.into_canvas().build().unwrap();
+
         debug!("Initializing SDL2 event pump");
-        let events = sdl_context
-            .event_pump()
-            .expect("Could initialize event subsystem");
+        let events = sdl_context.event_pump().unwrap();
 
         let mut cpu = Cpu::new();
         cpu.load_font(FONT);
+
         Chip8 {
             cpu: cpu,
             canvas: canvas,

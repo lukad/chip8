@@ -8,7 +8,7 @@ use std::io::Read;
 
 #[derive(Debug)]
 pub enum Error {
-    InstructionNotImplemented,
+    InstructionNotImplemented(Opcode),
 }
 
 pub struct Cpu {
@@ -230,8 +230,7 @@ impl Cpu {
                 self.registers[i as usize] = self.memory[self.i as usize];
             },
             _ => {
-                debug!("Instruction not implemented");
-                return Err(Error::InstructionNotImplemented);
+                return Err(Error::InstructionNotImplemented(self.fetch()));
             }
         }
 
