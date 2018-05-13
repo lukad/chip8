@@ -224,9 +224,11 @@ impl Cpu {
             }
             DumpRegisters(x) => for i in 0..=x {
                 self.memory[self.i as usize] = self.registers[i as usize];
+                self.i += 1;
             },
             LoadRegisters(x) => for i in 0..=x {
                 self.registers[i as usize] = self.memory[self.i as usize];
+                self.i += 1;
             },
             _ => {
                 return Err(Error::InstructionNotImplemented(self.fetch()));
