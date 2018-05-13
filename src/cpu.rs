@@ -138,7 +138,6 @@ impl Cpu {
                 }
             }
             SkipIfEqual(x, y) => {
-                debug!("{} {}", x, y);
                 if self.registers[x as usize] == self.registers[y as usize] {
                     self.pc += 2
                 }
@@ -164,7 +163,7 @@ impl Cpu {
             }
             ShiftRight(x, y) => {
                 let vy = self.registers[y as usize];
-                self.registers[0xF] = vy >> 7;
+                self.registers[0xF] = vy & 1;
                 self.registers[x as usize] = vy >> 1;
             }
             ShiftLeft(x, y) => {
@@ -223,10 +222,10 @@ impl Cpu {
                 self.memory[self.i as usize + 1] = (value % 100) / 10;
                 self.memory[self.i as usize + 2] = (value % 100) % 10;
             }
-            DumpRegisters(x) => for i in 0..x + 1 {
+            DumpRegisters(x) => for i in 0..=x {
                 self.memory[self.i as usize] = self.registers[i as usize];
             },
-            LoadRegisters(x) => for i in 0..x + 1 {
+            LoadRegisters(x) => for i in 0..=x {
                 self.registers[i as usize] = self.memory[self.i as usize];
             },
             _ => {
