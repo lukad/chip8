@@ -13,7 +13,11 @@ mod instruction;
 use chip8::Chip8;
 
 fn main() {
-    env_logger::init();
+    let mut builder = env_logger::Builder::new();
+    if let Ok(config) = env::var("CHIP8_LOG") {
+        builder.parse(&config);
+    }
+    builder.init();
 
     let mut chip8 = Chip8::new();
 
