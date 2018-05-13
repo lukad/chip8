@@ -8,7 +8,7 @@ use std::io::Read;
 
 #[derive(Debug)]
 pub enum Error {
-    InstructionNotImplemented(Opcode),
+    IllegalOpcode(Opcode),
 }
 
 pub struct Cpu {
@@ -147,6 +147,7 @@ impl Cpu {
                 self.registers[x as usize] = self.registers[x as usize].wrapping_add(kk)
             }
             Load(x, y) => self.registers[x as usize] = self.registers[y as usize],
+            Or(x, y) => self.registers[x as usize] |= self.registers[y as usize],
             And(x, y) => self.registers[x as usize] &= self.registers[y as usize],
             Add(x, y) => {
                 let vx = self.registers[x as usize];
@@ -166,6 +167,12 @@ impl Cpu {
                 self.registers[0xF] = vy & 1;
                 self.registers[x as usize] = vy >> 1;
             }
+            SubReverse(x, y) => {
+                let vx = self.registers[x as usize];
+                let vy = self.registers[y as usize];
+                self.registers[0xF] = (vy > vx) as u8;
+                self.registers[x as usize] = vy.wrapping_sub(vx);
+            }
             ShiftLeft(x, y) => {
                 let vy = self.registers[y as usize];
                 self.registers[0xF] = vy >> 7;
@@ -177,6 +184,7 @@ impl Cpu {
                 }
             }
             SetAddress(address) => self.i = address,
+            JumpV0Address(address) => self.i = address.wrapping_add(self.registers[0] as u16),
             RandomAnd(x, kk) => self.registers[x as usize] = rand::random::<u8>() & kk,
             Draw(x, y, height) => {
                 let vx = self.registers[x as usize] as usize;
@@ -238,8 +246,8 @@ impl Cpu {
                 self.registers[i as usize] = self.memory[self.i as usize];
                 self.i += 1;
             },
-            _ => {
-                return Err(Error::InstructionNotImplemented(self.fetch()));
+            Illegal(opcode) => {
+                return Err(Error::IllegalOpcode(opcode));
             }
         }
 

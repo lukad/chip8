@@ -14,14 +14,17 @@ pub enum Instruction {
     LoadConstant(u8, u8),
     AddConstant(u8, u8),
     Load(u8, u8),
+    Or(u8, u8),
     And(u8, u8),
     Add(u8, u8),
     Xor(u8, u8),
     Sub(u8, u8),
     ShiftRight(u8, u8),
+    SubReverse(u8, u8),
     ShiftLeft(u8, u8),
     SkipIfNotEqual(u8, u8),
     SetAddress(u16),
+    JumpV0Address(u16),
     RandomAnd(u8, u8),
     Draw(u8, u8, u8),
     SkipIfPressed(u8),
@@ -35,7 +38,7 @@ pub enum Instruction {
     SetBCD(u8),
     DumpRegisters(u8),
     LoadRegisters(u8),
-    NotImplemented(u16),
+    Illegal(Opcode),
 }
 
 impl fmt::Debug for Instruction {
@@ -51,14 +54,17 @@ impl fmt::Debug for Instruction {
             LoadConstant(x, kk) => write!(f, "LD V[{:#04X}], {:#04X}", x, kk),
             AddConstant(x, kk) => write!(f, "ADD V[{:#04X}], {:#04X}", x, kk),
             Load(x, y) => write!(f, "LD V[{:#04X}], V[{:#04X}]", x, y),
+            Or(x, y) => write!(f, "OR V[{:#04X}], V[{:#04X}]", x, y),
             And(x, y) => write!(f, "AND V[{:#04X}], V[{:#04X}]", x, y),
             Xor(x, y) => write!(f, "XOR V[{:#04X}], V[{:#04X}]", x, y),
             Add(x, y) => write!(f, "ADD V[{:#04X}], V[{:#04X}]", x, y),
             Sub(x, y) => write!(f, "SUB V[{:#04X}], V[{:#04X}]", x, y),
             ShiftRight(x, y) => write!(f, "SHR V[{:#04X}], V[{:#04X}]", x, y),
+            SubReverse(x, y) => write!(f, "SUBN V[{:#04X}], V[{:#04X}]", x, y),
             ShiftLeft(x, y) => write!(f, "SHL V[{:#04X}], V[{:#04X}]", x, y),
             SkipIfNotEqual(x, y) => write!(f, "SNE V[{:#04X}], V[{:#04X}]", x, y),
             SetAddress(addr) => write!(f, "LD I, {:#06X}", addr),
+            JumpV0Address(addr) => write!(f, "JP V0, {:#06X}", addr),
             RandomAnd(x, kk) => write!(f, "RND V[{:#04X}], {:#04X}", x, kk),
             Draw(x, y, n) => write!(f, "DRW V[{:#04X}], V[{:#04X}], {:#04X}", x, y, n),
             SkipIfPressed(x) => write!(f, "SKP v[{:#04X}]", x),
@@ -72,7 +78,7 @@ impl fmt::Debug for Instruction {
             SetBCD(x) => write!(f, "LD B, V[{:#04X}]", x),
             DumpRegisters(x) => write!(f, "LD [I], V[0...{:#04X}]", x),
             LoadRegisters(x) => write!(f, "LD V[0...{:#04X}], [I]", x),
-            NotImplemented(opcode) => write!(f, "{:#06X}", opcode),
+            Illegal(opcode) => write!(f, "{:?}", opcode),
         }
     }
 }
@@ -91,19 +97,22 @@ impl Instruction {
             (0x70, _) => AddConstant(high & 0x0F, low),
             (0x80, _) => match low & 0x0F {
                 0x00 => Load(high & 0x0F, low >> 4),
+                0x01 => Or(high & 0x0F, low >> 4),
                 0x02 => And(high & 0x0F, low >> 4),
                 0x03 => Xor(high & 0x0F, low >> 4),
                 0x04 => Add(high & 0x0F, low >> 4),
                 0x05 => Sub(high & 0x0F, low >> 4),
                 0x06 => ShiftRight(high & 0x0F, low >> 4),
+                0x07 => SubReverse(high & 0xF, low >> 4),
                 0x0E => ShiftLeft(high & 0x0F, low >> 4),
-                _ => NotImplemented((high as u16) << 8 | low as u16),
+                _ => Illegal(Opcode(high, low)),
             },
             (0x90, _) => match low & 0x0F {
                 0x00 => SkipIfNotEqual(high & 0x0F, low >> 4),
-                _ => NotImplemented((high as u16) << 8 | low as u16),
+                _ => Illegal(Opcode(high, low)),
             },
             (0xA0, _) => SetAddress(((high & 0x0F) as u16) << 8 | low as u16),
+            (0xB0, _) => JumpV0Address(((high & 0x0F) as u16) << 8 | low as u16),
             (0xC0, _) => RandomAnd(high & 0x0F, low),
             (0xD0, _) => Draw(high & 0x0F, low >> 4, low & 0x0F),
             (0xE0, 0x9E) => SkipIfPressed(high & 0xF),
@@ -117,7 +126,7 @@ impl Instruction {
             (0xF0, 0x33) => SetBCD(high & 0xF),
             (0xF0, 0x55) => DumpRegisters(high & 0xF),
             (0xF0, 0x65) => LoadRegisters(high & 0xF),
-            _ => NotImplemented((high as u16) << 8 | low as u16),
+            _ => Illegal(Opcode(high, low)),
         }
     }
 }
