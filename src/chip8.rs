@@ -134,19 +134,13 @@ impl Chip8 {
     fn draw(&mut self) {
         self.canvas.set_draw_color(Color::RGB(0, 0, 0));
         self.canvas.clear();
-        let white = Color::RGB(255, 255, 255);
+        self.canvas.set_draw_color(Color::RGB(255, 255, 255));
 
         for y in 0..32 {
             for x in 0..64 {
-                let bg_color = match (x % 2, y % 2) {
-                    (0, 1) | (1, 0) => Color::RGB(80, 80, 80),
-                    (_, _) => Color::RGB(20, 20, 20),
-                };
-                let color = match self.cpu.vram[y * 64 + x] & 1 {
-                    1 => white,
-                    _ => bg_color,
-                };
-                self.canvas.set_draw_color(color);
+                if self.cpu.vram[y * 64 + x] & 1 != 1 {
+                    continue;
+                }
                 self.canvas
                     .fill_rect(Rect::new(x as i32 * 12, y as i32 * 12, 12, 12))
                     .unwrap();
